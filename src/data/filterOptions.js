@@ -1,21 +1,17 @@
 export const commodities = [
-  "Beras Kualitas Medium I",
+  "Beras",
+  "Daging Ayam",
+  "Daging Sapi",
+  "Telur Ayam",
   "Bawang Merah",
   "Bawang Putih",
   "Cabai Merah",
-  "Cabai Merah Keriting",
   "Cabai Rawit",
-  "Daging Sapi Kualitas 1",
-  "Daging Ayam Ras Segar",
-  "Telur Ayam Ras Segar",
-  "Gula Pasir Lokal",
-  "Minyak Goreng Curah",
+  "Minyak Goreng",
+  "Gula Pasir",
 ];
 
 export const cities = [
   "Padang",
   "Bukittinggi",
-  "Payakumbuh",
-  "Solok",
-  "Pariaman",
 ];

@@ -6,23 +6,14 @@ import useDashboard from "../hooks/useDashboard";
 import { useState } from "react";
 import FilterBar from "../components/FilterBar";
 import EarlyWarningCard from "../components/EarlyWarningCard";
+import DataTable from "../components/DataTable";
 
-/**
- * 🔥 NEW IMPORTS (UPGRADE)
- */
-import useDataMode from "../hooks/useDataMode";
 import useMarketSimulator from "../hooks/useMarketSimulator";
 
 function Dashboard() {
   const [selectedCommodity, setSelectedCommodity] = useState("Cabai Merah");
   const [selectedCity, setSelectedCity] = useState("Padang");
-
-  /**
-   * =========================
-   * MODE SYSTEM (NEW)
-   * =========================
-   */
-  const { mode, setMode } = useDataMode();
+  const [mode, setMode] = useState("API");
 
   const {
     data,
@@ -44,35 +35,45 @@ function Dashboard() {
    */
   const safeData = data || {};
 
+  /**
+   * =========================
+   * CHART DATA (API)
+   * =========================
+   */
   const apiChart =
     safeData?.charts?.historical?.length > 0
-      ? safeData.charts.historical
+      ? safeData.charts.historical.map((item) => ({
+          day: new Date(item.tanggal).toLocaleDateString("id-ID", {
+            day: "2-digit",
+            month: "short",
+          }),
+          actual: item.harga_actual,
+          prediction: item.harga_prediksi,
+        }))
       : [];
 
   /**
    * =========================
-   * SMART DATA SWITCHER (CORE FEATURE)
+   * SMART SWITCHER
    * =========================
    */
-  const chartData =
-    mode === "MOCK"
-      ? apiChart.length > 0
-        ? apiChart
-        : generateMockChart()
-      : mode === "SIM"
-      ? simData
-      : apiChart;
+  const chartData = mode === "SIM" ? simData : apiChart;
+
+  /**
+   * =========================
+   * TABLE DATA (NEW 🔥)
+   * =========================
+   */
+  const tableData =
+    safeData?.table || safeData?.data || safeData?.historical || [];
 
   return (
     <div className="flex bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white min-h-screen">
-
       <Sidebar />
 
       <main className="flex-1 p-8 overflow-y-auto">
-
         {/* HEADER */}
         <div className="flex justify-between items-center mb-10">
-
           <div>
             <h1 className="text-4xl font-bold">
               Dashboard Prediksi Harga Pangan
@@ -83,38 +84,19 @@ function Dashboard() {
           </div>
 
           <div className="text-right">
-            <p className="text-green-400 font-semibold">
-              ● AI Online
-            </p>
+            <p className="text-green-400 font-semibold">● AI Online</p>
             <p className="text-slate-400 text-sm">
               {new Date().toLocaleTimeString()}
             </p>
           </div>
-
         </div>
 
-        {/* =========================
-            MODE SWITCHER (NEW UI)
-        ========================= */}
+        {/* MODE SWITCHER */}
         <div className="flex gap-2 mb-6">
-
-          <button
-            onClick={() => setMode("MOCK")}
-            className={`px-3 py-1 rounded-lg text-sm ${
-              mode === "MOCK"
-                ? "bg-yellow-500 text-black"
-                : "bg-white/10"
-            }`}
-          >
-            MOCK
-          </button>
-
           <button
             onClick={() => setMode("API")}
             className={`px-3 py-1 rounded-lg text-sm ${
-              mode === "API"
-                ? "bg-green-500 text-black"
-                : "bg-white/10"
+              mode === "API" ? "bg-green-500 text-black" : "bg-white/10"
             }`}
           >
             API
@@ -123,9 +105,7 @@ function Dashboard() {
           <button
             onClick={() => setMode("SIM")}
             className={`px-3 py-1 rounded-lg text-sm ${
-              mode === "SIM"
-                ? "bg-blue-500 text-black"
-                : "bg-white/10"
+              mode === "SIM" ? "bg-blue-500 text-black" : "bg-white/10"
             }`}
           >
             SIM
@@ -134,11 +114,13 @@ function Dashboard() {
           <span className="text-xs text-slate-400 ml-3 self-center">
             Mode: {mode}
           </span>
-
         </div>
 
         {/* EARLY WARNING */}
-        <EarlyWarningCard metrics={safeData?.metrics} />
+        <EarlyWarningCard
+          metrics={safeData?.metrics}
+          warning={safeData?.early_warning}
+        />
 
         {/* FILTER */}
         <FilterBar
@@ -149,8 +131,7 @@ function Dashboard() {
         />
 
         {/* STAT CARDS */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
           {apiLoading && mode === "API" ? (
             <>
               <SkeletonCard />
@@ -209,59 +190,62 @@ function Dashboard() {
             error={error}
             evaluation={safeData?.evaluation}
             early_warning={safeData?.early_warning}
-            realtime={mode === "SIM"}   // 🔥 penting
+            realtime={mode === "SIM"}
           />
         </div>
 
         {/* AI INSIGHT */}
-        <div className="bg-white/10 backdrop-blur-xl border border-white/10 rounded-3xl p-6">
-
-          <h2 className="text-2xl font-bold mb-6">
-            AI Insight
-          </h2>
+        <div className="bg-white/10 backdrop-blur-xl border border-white/10 rounded-3xl p-6 mb-8">
+          <h2 className="text-2xl font-bold mb-6">AI Insight</h2>
 
           <div className="space-y-4">
+            {safeData?.early_warning && (
+              <div className="bg-red-500/20 border border-red-500/20 rounded-2xl p-4">
+                <p className="text-red-300 font-medium">
+                  Status Early Warning: {safeData.early_warning.status}
+                </p>
+              </div>
+            )}
 
-            <div className="bg-red-500/20 border border-red-500/20 rounded-2xl p-4">
-              <p className="text-red-300 font-medium">
-                Prediksi harga cabai naik 12% minggu depan
-              </p>
-            </div>
+            {safeData?.evaluation_interpretation && (
+              <div className="bg-yellow-500/20 border border-yellow-500/20 rounded-2xl p-4">
+                <p className="text-yellow-300 font-medium">
+                  {safeData.evaluation_interpretation.interpretation}
+                </p>
+              </div>
+            )}
 
-            <div className="bg-yellow-500/20 border border-yellow-500/20 rounded-2xl p-4">
-              <p className="text-yellow-300 font-medium">
-                Bukittinggi memasuki status waspada pangan
-              </p>
-            </div>
+            {safeData?.lead_time_analysis && (
+              <div className="bg-blue-500/20 border border-blue-500/20 rounded-2xl p-4">
+                <p className="text-blue-300 font-medium">
+                  Lead Time: {safeData.lead_time_analysis.assessment}
+                </p>
+              </div>
+            )}
 
-            <div className="bg-green-500/20 border border-green-500/20 rounded-2xl p-4">
-              <p className="text-green-300 font-medium">
-                Confidence model AI mencapai 89%
-              </p>
-            </div>
-
+            {safeData?.evaluation && (
+              <div className="bg-green-500/20 border border-green-500/20 rounded-2xl p-4">
+                <p className="text-green-300 font-medium">
+                  MAPE Model: {Number(safeData.evaluation.mape).toFixed(2)}%
+                </p>
+              </div>
+            )}
           </div>
-
         </div>
 
+        {/* =========================
+            DATA TABLE (NEW 🔥)
+        ========================= */}
+        <div className="bg-white/10 backdrop-blur-xl border border-white/10 rounded-3xl p-6">
+          <h2 className="text-2xl font-bold mb-4">
+            Data Historis Harga
+          </h2>
+
+          <DataTable data={tableData} />
+        </div>
       </main>
     </div>
   );
-}
-
-/**
- * =========================
- * MOCK FALLBACK (NEW)
- * =========================
- */
-function generateMockChart() {
-  return [
-    { day: "Sen", actual: 30000, prediction: 30500 },
-    { day: "Sel", actual: 32000, prediction: 32500 },
-    { day: "Rab", actual: 31000, prediction: 31500 },
-    { day: "Kam", actual: 34000, prediction: 34500 },
-    { day: "Jum", actual: 36000, prediction: 36500 },
-  ];
 }
 
 export default Dashboard;

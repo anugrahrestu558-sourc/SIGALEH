@@ -1,5 +1,4 @@
 import {
-  LineChart,
   Line,
   XAxis,
   YAxis,
@@ -12,9 +11,8 @@ import {
   AreaChart,
 } from "recharts";
 
-import { TrendingUp, BrainCircuit, Activity } from "lucide-react";
+import { Activity } from "lucide-react";
 import SkeletonCard from "./SkeletonCard";
-import useMarketSimulator from "../hooks/useMarketSimulator";
 
 function PriceChart({
   city,
@@ -23,28 +21,36 @@ function PriceChart({
   loading = false,
   error = null,
   evaluation,
-  early_warning,
-  realtime = false, // 🔥 NEW: toggle simulator
+  realtime = false,
 }) {
   /**
    * =========================
-   * DATA SOURCE SWITCH
+   * LIMIT DATA
    * =========================
    */
-  const liveData = useMarketSimulator(45000, 1500);
-
   const safeChartData =
-    realtime
-      ? liveData
-      : Array.isArray(chartData) && chartData.length > 0
-        ? chartData
-        : generateFallbackChart();
+    Array.isArray(chartData) && chartData.length > 0
+      ? chartData.slice(-90)
+      : generateFallbackChart();
 
-  const last = safeChartData[safeChartData.length - 1] || {};
-  const first = safeChartData[0] || {};
+  console.log(
+    "Displayed Chart Data:",
+    safeChartData
+  );
 
-  const trend = last.actual > first.actual ? "UP" : "DOWN";
-  const volatility = calculateVolatility(safeChartData);
+  const last =
+    safeChartData[safeChartData.length - 1] || {};
+
+  const first =
+    safeChartData[0] || {};
+
+  const trend =
+    last.actual > first.actual
+      ? "UP"
+      : "DOWN";
+
+  const volatility =
+    calculateVolatility(safeChartData);
 
   return (
     <div className="bg-[#0b1220] border border-white/10 p-6 rounded-3xl shadow-2xl mt-8">
@@ -58,39 +64,49 @@ function PriceChart({
           </h2>
 
           <p className="text-slate-400 text-sm mt-1">
-            {commodity || "-"} • {city || "-"}
+            {commodity} • {city}
           </p>
         </div>
 
         <div className="flex items-center gap-2 px-3 py-1 rounded-full border border-green-500/20 bg-green-500/10">
-          <Activity size={14} className="text-green-400" />
+          <Activity
+            size={14}
+            className="text-green-400"
+          />
+
           <span className="text-green-400 text-xs">
-            {realtime ? "LIVE SIMULATION" : "STATIC MODE"}
+            {realtime
+              ? "LIVE SIMULATION"
+              : "API DATA"}
           </span>
         </div>
-
       </div>
 
       {/* ERROR */}
       {error && (
-        <div className="text-red-400 text-sm mb-3">
-          {error}
+        <div className="bg-red-500/10 border border-red-500/20 p-3 rounded-xl mb-4">
+          <p className="text-red-400 text-sm">
+            {error}
+          </p>
         </div>
       )}
 
       {/* LOADING */}
       {loading ? (
-        <SkeletonCard className="h-[320px]" />
+        <SkeletonCard className="h-[450px]" />
       ) : (
         <>
-
           {/* STATS */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
 
             <MiniCard
               label="Market Trend"
               value={trend}
-              color={trend === "UP" ? "green" : "red"}
+              color={
+                trend === "UP"
+                  ? "green"
+                  : "red"
+              }
             />
 
             <MiniCard
@@ -101,66 +117,107 @@ function PriceChart({
 
             <MiniCard
               label="AI Confidence"
-              value={`${evaluation?.da ?? 89}%`}
+              value={`${evaluation?.da ?? 0}%`}
               color="blue"
             />
 
           </div>
 
           {/* LAST PRICE */}
-          <div className="mb-3 text-xs text-slate-400">
-            Last Price:
-            <span className="text-white font-semibold ml-2">
-              {last.actual?.toLocaleString?.("id-ID") || "-"}
+          <div className="mb-4 text-sm text-slate-400">
+            Harga Terakhir :
+            <span className="text-white font-bold ml-2">
+              Rp{" "}
+              {Number(
+                last.actual || 0
+              ).toLocaleString("id-ID")}
             </span>
           </div>
 
           {/* CHART */}
-          <div className="h-96">
-
-            <ResponsiveContainer width="100%" height="100%">
-
-              <AreaChart data={safeChartData}>
-
+          <div
+            className="w-full"
+            style={{
+              height: "450px",
+              minHeight: "450px",
+            }}
+          >
+            <ResponsiveContainer
+              width="100%"
+              height={450}
+            >
+              <AreaChart
+                data={safeChartData}
+              >
                 <defs>
-                  <linearGradient id="greenFill" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#22c55e" stopOpacity={0.4} />
-                    <stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
+
+                  <linearGradient
+                    id="greenFill"
+                    x1="0"
+                    y1="0"
+                    x2="0"
+                    y2="1"
+                  >
+                    <stop
+                      offset="5%"
+                      stopColor="#22c55e"
+                      stopOpacity={0.4}
+                    />
+                    <stop
+                      offset="95%"
+                      stopColor="#22c55e"
+                      stopOpacity={0}
+                    />
                   </linearGradient>
 
-                  <linearGradient id="blueFill" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#38bdf8" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#38bdf8" stopOpacity={0} />
-                  </linearGradient>
                 </defs>
 
-                <CartesianGrid stroke="#1f2937" strokeDasharray="3 3" opacity={0.3} />
+                <CartesianGrid
+                  stroke="#1f2937"
+                  strokeDasharray="3 3"
+                  opacity={0.3}
+                />
 
-                <XAxis dataKey="day" stroke="#94a3b8" />
-                <YAxis stroke="#94a3b8" />
+                <XAxis
+                  dataKey="day"
+                  stroke="#94a3b8"
+                  minTickGap={30}
+                />
 
-                <Tooltip content={<TradingTooltip />} />
+                <YAxis
+                  stroke="#94a3b8"
+                  tickFormatter={(value) =>
+                    `${Math.round(
+                      value / 1000
+                    )}k`
+                  }
+                />
+
+                <Tooltip
+                  content={<TradingTooltip />}
+                />
+
                 <Legend />
 
-                {/* AVG LINE */}
                 <ReferenceLine
-                  y={average(safeChartData)}
+                  y={average(
+                    safeChartData
+                  )}
                   stroke="#64748b"
-                  strokeDasharray="3 3"
+                  strokeDasharray="5 5"
                   label="AVG"
                 />
 
-                {/* ACTUAL */}
                 <Area
                   type="monotone"
                   dataKey="actual"
                   stroke="#22c55e"
                   fill="url(#greenFill)"
                   strokeWidth={2}
-                  name="Actual Price"
+                  dot={false}
+                  name="Harga Aktual"
                 />
 
-                {/* PREDICTION */}
                 <Line
                   type="monotone"
                   dataKey="prediction"
@@ -168,15 +225,12 @@ function PriceChart({
                   strokeWidth={2}
                   strokeDasharray="6 6"
                   dot={false}
-                  name="AI Prediction"
+                  name="Prediksi AI"
                 />
 
               </AreaChart>
-
             </ResponsiveContainer>
-
           </div>
-
         </>
       )}
     </div>
@@ -184,43 +238,66 @@ function PriceChart({
 }
 
 /**
- * =========================
  * MINI CARD
- * =========================
  */
-function MiniCard({ label, value, color }) {
+function MiniCard({
+  label,
+  value,
+  color,
+}) {
   const colors = {
-    green: "text-green-400 border-green-500/20 bg-green-500/10",
-    red: "text-red-400 border-red-500/20 bg-red-500/10",
-    blue: "text-sky-400 border-sky-500/20 bg-sky-500/10",
-    yellow: "text-yellow-400 border-yellow-500/20 bg-yellow-500/10",
+    green:
+      "text-green-400 border-green-500/20 bg-green-500/10",
+    red:
+      "text-red-400 border-red-500/20 bg-red-500/10",
+    blue:
+      "text-sky-400 border-sky-500/20 bg-sky-500/10",
+    yellow:
+      "text-yellow-400 border-yellow-500/20 bg-yellow-500/10",
   };
 
   return (
-    <div className={`p-4 rounded-2xl border ${colors[color]}`}>
-      <p className="text-xs text-slate-400">{label}</p>
-      <p className="text-lg font-bold">{value}</p>
+    <div
+      className={`p-4 rounded-2xl border ${colors[color]}`}
+    >
+      <p className="text-xs text-slate-400">
+        {label}
+      </p>
+
+      <p className="text-lg font-bold">
+        {value}
+      </p>
     </div>
   );
 }
 
 /**
- * =========================
  * TOOLTIP
- * =========================
  */
-function TradingTooltip({ active, payload, label }) {
-  if (!active || !payload?.length) return null;
+function TradingTooltip({
+  active,
+  payload,
+  label,
+}) {
+  if (!active || !payload?.length)
+    return null;
 
   return (
     <div className="bg-[#0f172a] border border-white/10 p-3 rounded-xl">
-      <p className="text-slate-400 text-xs mb-2">{label}</p>
+      <p className="text-slate-400 text-xs mb-2">
+        {label}
+      </p>
 
-      {payload.map((p, i) => (
-        <p key={i} className="text-sm text-white">
-          {p.name}:{" "}
+      {payload.map((item, index) => (
+        <p
+          key={index}
+          className="text-white text-sm"
+        >
+          {item.name}:{" "}
           <span className="font-bold">
-            {p.value?.toLocaleString?.("id-ID")}
+            {Number(
+              item.value || 0
+            ).toLocaleString("id-ID")}
           </span>
         </p>
       ))}
@@ -229,39 +306,75 @@ function TradingTooltip({ active, payload, label }) {
 }
 
 /**
- * =========================
  * HELPERS
- * =========================
  */
 function average(data) {
-  const sum = data.reduce((a, b) => a + (b.actual || 0), 0);
+  if (!data.length) return 0;
+
+  const sum = data.reduce(
+    (acc, item) =>
+      acc + (item.actual || 0),
+    0
+  );
+
   return sum / data.length;
 }
 
 function calculateVolatility(data) {
-  const values = data.map(d => d.actual || 0);
+  if (!data.length) return 0;
+
+  const values = data.map(
+    (d) => d.actual || 0
+  );
+
   const max = Math.max(...values);
   const min = Math.min(...values);
 
   if (min === 0) return 0;
 
-  return (((max - min) / min) * 100).toFixed(2);
+  return (
+    ((max - min) / min) *
+    100
+  ).toFixed(2);
 }
 
-/**
- * =========================
- * FALLBACK
- * =========================
- */
 function generateFallbackChart() {
   return [
-    { day: "Sen", actual: 30000, prediction: 30500 },
-    { day: "Sel", actual: 32000, prediction: 32500 },
-    { day: "Rab", actual: 31000, prediction: 31500 },
-    { day: "Kam", actual: 34000, prediction: 34500 },
-    { day: "Jum", actual: 36000, prediction: 36500 },
-    { day: "Sab", actual: 38000, prediction: 38500 },
-    { day: "Min", actual: 40000, prediction: 40500 },
+    {
+      day: "Sen",
+      actual: 30000,
+      prediction: 30500,
+    },
+    {
+      day: "Sel",
+      actual: 32000,
+      prediction: 32500,
+    },
+    {
+      day: "Rab",
+      actual: 31000,
+      prediction: 31500,
+    },
+    {
+      day: "Kam",
+      actual: 34000,
+      prediction: 34500,
+    },
+    {
+      day: "Jum",
+      actual: 36000,
+      prediction: 36500,
+    },
+    {
+      day: "Sab",
+      actual: 38000,
+      prediction: 38500,
+    },
+    {
+      day: "Min",
+      actual: 40000,
+      prediction: 40500,
+    },
   ];
 }
 
